@@ -1,0 +1,21 @@
+{
+  "speech_recognition": {
+    "language": "en-US",
+    "energy_threshold": 300,
+    "pause_threshold": 0.8,
+    "phrase_time_limit": 10,
+    "stop_phrase": "stop listening"
+  },
+  "chatgpt": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.0
+  },
+  "execution": {
+    "mouse_move_duration": 0.25,
+    "allowed_applications": {
+      "notepad": "notepad.exe",
+      "calculator": "calc.exe",
+      "explorer": "explorer.exe"
+    }
+  }
+}
