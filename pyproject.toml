@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voice-assistant-automation"
+version = "0.1.0"
+description = "Voice-controlled Windows automation powered by ChatGPT"
+authors = [{name = "AI Developer"}]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "openai>=1.35.0",
+    "SpeechRecognition>=3.10.0",
+    "PyAudio>=0.2.14; platform_system == 'Windows'",
+    "pyautogui>=0.9.54",
+]
+
+[project.scripts]
+voice-automation = "voice_assistant.cli:main"
+voice-automation-dashboard = "voice_assistant.dashboard_app:main"
+
+[project.optional-dependencies]
+build = [
+    "pyinstaller>=6.3.0",
+]
