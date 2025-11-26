@@ -1,0 +1,50 @@
+# Example configuration file for AI Computer Automation
+# Copy this to your project directory and customize as needed
+
+# AI Configuration
+openai_api_key: "your_openai_api_key_here"
+anthropic_api_key: "your_anthropic_api_key_here"
+
+ai_model: "gpt-3.5-turbo"
+ai_temperature: 0.7
+ai_max_tokens: 2000
+
+# Automation Settings
+automation_delay: 0.5
+automation_timeout: 30
+failsafe_enabled: true
+
+# Screenshot and Vision
+screenshot_dir: "./screenshots"
+screenshot_format: "png"
+vision_confidence_threshold: 0.8
+
+# GUI Automation
+gui_click_delay: 0.1
+gui_type_delay: 0.05
+
+# Logging
+log_level: "INFO"
+log_file: "./logs/automation.log"
+log_format: "text"
+
+# Security
+safe_mode: true
+require_confirmation: false
+
+# Performance
+max_workers: 4
+cache_enabled: true
+cache_ttl: 3600
+
+# Custom Task Settings
+custom_tasks:
+  example_task:
+    enabled: true
+    timeout: 60
+    retry_attempts: 3
+
+  data_processing:
+    enabled: true
+    batch_size: 100
+    parallel_execution: true
