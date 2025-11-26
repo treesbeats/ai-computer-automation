@@ -1,10 +1,14 @@
 # AI Computer Automation
 
-A Python-based framework for automating computer tasks using AI, enabling intelligent automation of repetitive workflows, GUI interactions, and system operations.
+A comprehensive, production-ready Python framework for building intelligent automation workflows with AI, GUI automation, computer vision, and web scraping capabilities.
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Overview
 
-This project provides tools and utilities to automate computer tasks with AI-powered decision making. It combines traditional automation techniques with modern AI capabilities to create flexible and intelligent automation solutions.
+AI Computer Automation is a modular framework that combines traditional automation with modern AI capabilities. Build everything from simple scripts to complex enterprise workflows with state management, parallel execution, and intelligent decision-making
 
 ## Features
 
