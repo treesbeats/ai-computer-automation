@@ -15,6 +15,8 @@ MouseGPT is a complete dictation engine that takes verbal commands from users an
 - **Wake Word Support**: Customizable wake word activation (e.g., "Hey Mouse")
 - **Text-to-Speech Feedback**: Audio confirmation of executed commands
 - **Cross-Platform**: Works on Windows, macOS, and Linux
+- **Windows Integration**: Native Windows Voice Access and SAPI support (Windows 10/11)
+- **UI Automation**: Find and click UI elements by name (Windows)
 
 ## Installation
 
@@ -38,6 +40,11 @@ sudo apt-get install portaudio19-dev python3-pyaudio
 
 **Windows:**
 PyAudio wheels are available for Windows, no additional setup needed.
+
+For Windows-specific features (Voice Access integration, SAPI, UI Automation):
+```bash
+pip install pywin32 comtypes
+```
 
 ### Install MouseGPT
 
@@ -69,6 +76,9 @@ mousegpt start --ai-backend openai --openai-key YOUR_API_KEY
 
 # Start with Whisper for better speech recognition
 mousegpt start --speech-backend whisper_api --openai-key YOUR_API_KEY
+
+# Start with Windows SAPI (Windows only)
+mousegpt start --speech-backend windows_sapi
 ```
 
 ### Interactive Text Mode
@@ -97,6 +107,24 @@ mousegpt test
 
 ```bash
 mousegpt devices
+```
+
+### Windows-Specific Commands
+
+```bash
+# Check Windows integration status
+mousegpt windows
+
+# Control Windows Voice Access (Windows 11)
+mousegpt voice-access --status
+mousegpt voice-access --start
+mousegpt voice-access --stop
+
+# Find UI elements by name
+mousegpt find "Submit"
+mousegpt find --buttons
+mousegpt find --inputs
+mousegpt find --list
 ```
 
 ## Voice Commands

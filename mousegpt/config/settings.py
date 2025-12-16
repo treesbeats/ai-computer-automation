@@ -12,6 +12,8 @@ class SpeechBackend(str, Enum):
     WHISPER_API = "whisper_api"
     WHISPER_LOCAL = "whisper_local"
     SPHINX = "sphinx"
+    WINDOWS_SAPI = "windows_sapi"  # Windows Speech API
+    WINDOWS_VOICE_ACCESS = "windows_voice_access"  # Windows 11 Voice Access
 
 
 class AIBackend(str, Enum):
@@ -163,6 +165,32 @@ class Settings(BaseSettings):
     screen_highlight_duration: float = Field(
         default=0.3,
         description="Duration to highlight elements on screen",
+    )
+
+    # Windows-Specific Settings
+    windows_use_sapi: bool = Field(
+        default=False,
+        description="Use Windows SAPI for speech recognition (Windows only)",
+    )
+    windows_use_shared_recognizer: bool = Field(
+        default=True,
+        description="Use shared Windows recognizer (integrates with Voice Control)",
+    )
+    windows_voice_access_integration: bool = Field(
+        default=False,
+        description="Enable integration with Windows 11 Voice Access",
+    )
+    windows_use_ui_automation: bool = Field(
+        default=True,
+        description="Use Windows UI Automation for element detection",
+    )
+    windows_use_sendinput: bool = Field(
+        default=True,
+        description="Use Windows SendInput API for input simulation",
+    )
+    windows_dictation_mode: bool = Field(
+        default=True,
+        description="Enable dictation mode for free-form text input",
     )
 
 

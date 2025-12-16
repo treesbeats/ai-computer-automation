@@ -56,6 +56,10 @@ dev = [
 whisper = [
     "openai-whisper>=20231117",
 ]
+windows = [
+    "pywin32>=306",
+    "comtypes>=1.2.0",
+]
 
 [project.scripts]
 mousegpt = "mousegpt.main:main"
