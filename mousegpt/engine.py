@@ -361,6 +361,18 @@ class MouseGPTEngine:
                 ActionType.OPEN_APP: self._execute_open_app,
                 ActionType.CLOSE_APP: self._execute_close_app,
                 ActionType.SWITCH_APP: self._execute_switch_app,
+                ActionType.OPEN_FOLDER: self._execute_open_folder,
+                ActionType.SEARCH_WEB: self._execute_search_web,
+                # Context-aware actions
+                ActionType.CLOSE_CURRENT: self._execute_close_current,
+                ActionType.MINIMIZE_CURRENT: self._execute_minimize_current,
+                ActionType.MAXIMIZE_CURRENT: self._execute_maximize_current,
+                ActionType.SWITCH_WINDOW: self._execute_switch_window,
+                ActionType.GO_BACK: self._execute_go_back,
+                ActionType.GO_FORWARD: self._execute_go_forward,
+                ActionType.REFRESH: self._execute_refresh,
+                ActionType.NEW_TAB: self._execute_new_tab,
+                ActionType.CLOSE_TAB: self._execute_close_tab,
                 ActionType.STOP: self._execute_stop,
                 ActionType.HELP: self._execute_help,
             }
@@ -592,6 +604,8 @@ class MouseGPTEngine:
         import platform
 
         app_name = params.get('app_name', '')
+        executable = params.get('executable')
+        display_name = params.get('app_display_name', app_name)
 
         if not app_name:
             return ExecutionResult(
@@ -603,25 +617,50 @@ class MouseGPTEngine:
         system = platform.system().lower()
 
         try:
-            if system == 'darwin':
-                subprocess.Popen(['open', '-a', app_name])
-            elif system == 'windows':
-                subprocess.Popen(['start', '', app_name], shell=True)
-            else:
-                subprocess.Popen([app_name])
+            # Try smart app opening first
+            from mousegpt.commands.smart import SmartCommandProcessor
+            processor = SmartCommandProcessor()
 
-            self.tts.speak(f"Opening {app_name}")
+            if processor.open_application(app_name):
+                self.tts.speak(f"Opening {display_name}")
+                return ExecutionResult(
+                    success=True,
+                    action_type=ActionType.OPEN_APP,
+                    message=f"Opened {display_name}",
+                )
+
+            # Fallback to direct opening
+            if executable:
+                if system == 'windows':
+                    if executable.endswith(':'):
+                        import os
+                        os.startfile(executable)
+                    else:
+                        subprocess.Popen(executable, shell=True)
+                elif system == 'darwin':
+                    subprocess.Popen(['open', '-a', display_name])
+                else:
+                    subprocess.Popen([executable])
+            else:
+                if system == 'darwin':
+                    subprocess.Popen(['open', '-a', app_name])
+                elif system == 'windows':
+                    subprocess.Popen(['start', '', app_name], shell=True)
+                else:
+                    subprocess.Popen([app_name])
+
+            self.tts.speak(f"Opening {display_name}")
 
             return ExecutionResult(
                 success=True,
                 action_type=ActionType.OPEN_APP,
-                message=f"Opened {app_name}",
+                message=f"Opened {display_name}",
             )
         except Exception as e:
             return ExecutionResult(
                 success=False,
                 action_type=ActionType.OPEN_APP,
-                error=f"Failed to open {app_name}: {e}",
+                error=f"Failed to open {display_name}: {e}",
             )
 
     def _execute_close_app(self, params: dict) -> ExecutionResult:
@@ -696,6 +735,11 @@ Available commands:
 - Type [text]
 - Press [key]
 - Open/close/switch to [application]
+- Go to [folder] (documents, downloads, desktop)
+- Search for [query]
+- Close this / minimize this / maximize this
+- Go back / go forward / refresh
+- New tab / close tab
 - Screenshot
 - Stop/pause
 - Help
@@ -706,6 +750,148 @@ Available commands:
             action_type=ActionType.HELP,
             message=help_text,
             data={'help_text': help_text},
+        )
+
+    def _execute_open_folder(self, params: dict) -> ExecutionResult:
+        """Execute open folder action."""
+        import os
+
+        path = params.get('path', '')
+
+        if not path:
+            return ExecutionResult(
+                success=False,
+                action_type=ActionType.OPEN_FOLDER,
+                error="No folder specified",
+            )
+
+        try:
+            path = os.path.expanduser(path)
+            from mousegpt.commands.smart import SmartCommandProcessor
+            processor = SmartCommandProcessor()
+            processor.open_folder(path)
+
+            self.tts.speak(f"Opening folder")
+            return ExecutionResult(
+                success=True,
+                action_type=ActionType.OPEN_FOLDER,
+                message=f"Opened {path}",
+            )
+        except Exception as e:
+            return ExecutionResult(
+                success=False,
+                action_type=ActionType.OPEN_FOLDER,
+                error=f"Failed to open folder: {e}",
+            )
+
+    def _execute_search_web(self, params: dict) -> ExecutionResult:
+        """Execute web search action."""
+        query = params.get('query', '')
+
+        if not query:
+            return ExecutionResult(
+                success=False,
+                action_type=ActionType.SEARCH_WEB,
+                error="No search query specified",
+            )
+
+        try:
+            from mousegpt.commands.smart import SmartCommandProcessor
+            processor = SmartCommandProcessor()
+            processor.search_web(query)
+
+            self.tts.speak(f"Searching for {query}")
+            return ExecutionResult(
+                success=True,
+                action_type=ActionType.SEARCH_WEB,
+                message=f"Searched for: {query}",
+            )
+        except Exception as e:
+            return ExecutionResult(
+                success=False,
+                action_type=ActionType.SEARCH_WEB,
+                error=f"Failed to search: {e}",
+            )
+
+    def _execute_close_current(self, params: dict) -> ExecutionResult:
+        """Execute close current window action."""
+        self.keyboard.close_window()
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.CLOSE_CURRENT,
+            message="Closed current window",
+        )
+
+    def _execute_minimize_current(self, params: dict) -> ExecutionResult:
+        """Execute minimize current window action."""
+        self.keyboard.hotkey('win', 'down')  # Windows minimize
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.MINIMIZE_CURRENT,
+            message="Minimized current window",
+        )
+
+    def _execute_maximize_current(self, params: dict) -> ExecutionResult:
+        """Execute maximize current window action."""
+        self.keyboard.hotkey('win', 'up')  # Windows maximize
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.MAXIMIZE_CURRENT,
+            message="Maximized current window",
+        )
+
+    def _execute_switch_window(self, params: dict) -> ExecutionResult:
+        """Execute switch window action."""
+        self.keyboard.switch_app()
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.SWITCH_WINDOW,
+            message="Switched window",
+        )
+
+    def _execute_go_back(self, params: dict) -> ExecutionResult:
+        """Execute go back action."""
+        self.keyboard.hotkey('alt', 'left')
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.GO_BACK,
+            message="Went back",
+        )
+
+    def _execute_go_forward(self, params: dict) -> ExecutionResult:
+        """Execute go forward action."""
+        self.keyboard.hotkey('alt', 'right')
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.GO_FORWARD,
+            message="Went forward",
+        )
+
+    def _execute_refresh(self, params: dict) -> ExecutionResult:
+        """Execute refresh action."""
+        self.keyboard.press('f5')
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.REFRESH,
+            message="Refreshed",
+        )
+
+    def _execute_new_tab(self, params: dict) -> ExecutionResult:
+        """Execute new tab action."""
+        self.keyboard.new_tab()
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.NEW_TAB,
+            message="Opened new tab",
+        )
+
+    def _execute_close_tab(self, params: dict) -> ExecutionResult:
+        """Execute close tab action."""
+        self.keyboard.close_tab()
+        return ExecutionResult(
+            success=True,
+            action_type=ActionType.CLOSE_TAB,
+            message="Closed tab",
         )
 
     def _register_default_commands(self) -> None:

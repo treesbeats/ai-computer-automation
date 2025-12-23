@@ -43,6 +43,19 @@ class ActionType(str, Enum):
     OPEN_APP = "open_app"
     CLOSE_APP = "close_app"
     SWITCH_APP = "switch_app"
+    OPEN_FOLDER = "open_folder"
+    SEARCH_WEB = "search_web"
+
+    # Context-aware actions
+    CLOSE_CURRENT = "close_current"
+    MINIMIZE_CURRENT = "minimize_current"
+    MAXIMIZE_CURRENT = "maximize_current"
+    SWITCH_WINDOW = "switch_window"
+    GO_BACK = "go_back"
+    GO_FORWARD = "go_forward"
+    REFRESH = "refresh"
+    NEW_TAB = "new_tab"
+    CLOSE_TAB = "close_tab"
 
     # Control actions
     STOP = "stop"
@@ -91,6 +104,15 @@ class CommandParser:
         self.settings = settings or get_settings()
         self.registry = registry or get_registry()
         self._openai_client = None
+        self._smart_processor = None
+
+    @property
+    def smart_processor(self):
+        """Get the smart command processor."""
+        if self._smart_processor is None:
+            from mousegpt.commands.smart import SmartCommandProcessor
+            self._smart_processor = SmartCommandProcessor()
+        return self._smart_processor
 
     def parse(self, text: str) -> ParseResult:
         """
@@ -115,7 +137,11 @@ class CommandParser:
         # First try rule-based parsing
         result = self._parse_rule_based(text)
 
-        # If rule-based fails and AI is enabled, try AI parsing
+        # If rule-based fails, try smart parsing
+        if not result.success:
+            result = self._parse_smart(text)
+
+        # If smart parsing fails and AI is enabled, try AI parsing
         if not result.success and self.settings.ai_backend == AIBackend.OPENAI:
             result = self._parse_with_ai(text)
 
@@ -147,6 +173,112 @@ class CommandParser:
             error="Could not understand command",
             raw_text=text,
         )
+
+    def _parse_smart(self, text: str) -> ParseResult:
+        """Parse using smart natural language understanding."""
+        from mousegpt.commands.smart import (
+            understand_command,
+            find_context_action,
+            APP_ALIASES,
+        )
+
+        result = understand_command(text)
+
+        if not result["understood"]:
+            return ParseResult(
+                success=False,
+                actions=[],
+                error="Could not understand command",
+                raw_text=text,
+            )
+
+        action = result["action"]
+        target = result["target"]
+        params = result.get("params", {})
+
+        # Map smart actions to ActionTypes
+        action_mapping = {
+            # Context-aware actions
+            "close_current": ActionType.CLOSE_CURRENT,
+            "minimize_current": ActionType.MINIMIZE_CURRENT,
+            "maximize_current": ActionType.MAXIMIZE_CURRENT,
+            "switch_window": ActionType.SWITCH_WINDOW,
+            "go_back": ActionType.GO_BACK,
+            "go_forward": ActionType.GO_FORWARD,
+            "refresh": ActionType.REFRESH,
+            "new_tab": ActionType.NEW_TAB,
+            "close_tab": ActionType.CLOSE_TAB,
+            "search": ActionType.SEARCH_WEB,
+
+            # Standard actions
+            "open": ActionType.OPEN_APP,
+            "close": ActionType.CLOSE_APP,
+            "switch": ActionType.SWITCH_APP,
+            "click": ActionType.CLICK,
+            "type": ActionType.TYPE_TEXT,
+            "scroll": ActionType.SCROLL,
+        }
+
+        # Handle folder navigation
+        if params.get("is_folder"):
+            parsed_action = ParsedAction(
+                action_type=ActionType.OPEN_FOLDER,
+                parameters={"path": target},
+                raw_text=text,
+                confidence=result["confidence"],
+            )
+            return ParseResult(success=True, actions=[parsed_action], raw_text=text)
+
+        # Handle search
+        if action == "search":
+            # Extract search query
+            text_lower = text.lower()
+            for prefix in ["search for", "look up", "google", "search the web for", "search"]:
+                if prefix in text_lower:
+                    query = text_lower.split(prefix, 1)[-1].strip()
+                    parsed_action = ParsedAction(
+                        action_type=ActionType.SEARCH_WEB,
+                        parameters={"query": query},
+                        raw_text=text,
+                        confidence=0.9,
+                    )
+                    return ParseResult(success=True, actions=[parsed_action], raw_text=text)
+
+        # Get action type
+        action_type = action_mapping.get(action, ActionType.UNKNOWN)
+
+        if action_type == ActionType.UNKNOWN:
+            return ParseResult(
+                success=False,
+                actions=[],
+                error=f"Unknown action: {action}",
+                raw_text=text,
+            )
+
+        # Build parameters
+        action_params = {}
+
+        if target:
+            # Check if target is an app
+            app_info = params.get("app_info")
+            if app_info:
+                action_params["app_name"] = target
+                action_params["app_display_name"] = app_info.name
+                if app_info.executable:
+                    action_params["executable"] = app_info.executable
+                if app_info.windows_name:
+                    action_params["window_pattern"] = app_info.windows_name
+            else:
+                action_params["target"] = target
+
+        parsed_action = ParsedAction(
+            action_type=action_type,
+            parameters=action_params,
+            raw_text=text,
+            confidence=result["confidence"],
+        )
+
+        return ParseResult(success=True, actions=[parsed_action], raw_text=text)
 
     def _match_builtin_patterns(self, text: str) -> Optional[ParsedAction]:
         """Match against built-in command patterns."""
